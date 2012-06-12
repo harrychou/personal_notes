@@ -1,0 +1,809 @@
+How to create fully encapsulated Domain Models
+
+Update: The new and improved solution is now available: Domain Events, Take 2.
+
+Fundamental Question:
+- if an operation requires more data than what is in the object, how do you structure your code?
+	* option 1: make objects anemic, put the logic in service, which has all the data from each objects
+	* option 2: pass in a Repository/Service object's method that allow the method to access the additional information
+	* option 3: try to 'see' if you can represent the data in the object graph you already has in a reasonable manner
+
+Udi is on option 3:
+- the Customer object actually should 'own' the data
+	* the GamesReportedLost should be available
+- the TradeInCart should have reference to Customer object to perform validation
+	public void Add(Game game)
+	{
+		if (lineItems.Count >= CONSTANTS.MaxItemsPerCart)
+		{
+			FailureEvents.RaiseCartIsFullEvent();
+			return;
+		}
+	
+		if (NumberOfGameAlreadyInCart(game) >=
+			CONSTANTS.MaxNumberOfSameGamePerCart)
+		{
+			FailureEvents
+				.RaiseMaxNumberOfSameGamePerCartReachedEvent();
+			return;
+		}
+	
+		if (customer.GamesReportedLost.Contains(game))
+			FailureEvents.RaiseGameReportedLostEvent();
+		else
+			this.lineItems.Add(new LineItem(game));
+	}
+- the validation will raise failure events for validation errors
+	public static class FailureEvents
+	{
+		public static event EventHandler GameReportedLost;
+		public static void RaiseGameReportedLostEvent()
+		{
+			if (GameReportedLost != null)
+				GameReportedLost(null, null);
+		}
+	
+		public static event EventHandler CartIsFull;
+		public static void RaiseCartIsFullEvent()
+		{
+			if (CartIsFull != null)
+				CartIsFull(null, null);
+		}
+	
+		public static event EventHandler MaxNumberOfSameGamePerCartReached;
+		public static void RaiseMaxNumberOfSameGamePerCartReachedEvent()
+		{
+			if (MaxNumberOfSameGamePerCartReached != null)
+				MaxNumberOfSameGamePerCartReached(null, null);
+		}
+	}
+- service layer class call the Add method of TradeInCart object to add items to cart
+	* also need to subscribe to the failure events
+	 (( what if they forgot to do so???)
+- using EventArgs to communicate more failure event data to client
+	* what items already in cart
+	* what item caused the error
+
+- service code ... using NServiceBus
+	* remember to unsubscribe to make sure no memory leak
+	  (or use Weak Reference to avoid leakage)
+	
+	public class AddGameToCartMessageHandler :
+		BaseMessageHandler<AddGameToCartMessage>
+	{
+		public override void Handle(AddGameToCartMessage m)
+		{
+			using (ISession session = SessionFactory.OpenSession())
+			using (ITransaction tx = session.BeginTransaction())
+			{
+				TradeInCart cart = session.Get<TradeInCart>(m.CartId);
+				Game g = session.Get<Game>(m.GameId);
+	
+				Domain.FailureEvents.GameReportedLost +=
+					gameReportedLost;
+				Domain.FailureEvents.CartIsFull +=
+					cartIsFull;
+				Domain.FailureEvents.MaxNumberOfSameGamePerCartReached +=
+					maxNumberOfSameGamePerCartReached;
+	
+				cart.Add(g);
+	
+				Domain.FailureEvents.GameReportedLost -=
+					gameReportedLost;
+				Domain.FailureEvents.CartIsFull -=
+					cartIsFull;
+				Domain.FailureEvents.MaxNumberOfSameGamePerCartReached -=
+					maxNumberOfSameGamePerCartReached;
+	
+				tx.Commit();
+			}
+		}
+	
+		private EventHandler gameReportedLost = delegate { 
+				Bus.Return((int)ErrorCodes.GameReportedLost);
+			};
+	
+		private EventHandler cartIsFull = delegate { 
+				Bus.Return((int)ErrorCodes.CartIsFull);
+			};
+	
+		private EventHandler maxNumberOfSameGamePerCartReached = delegate { 
+				Bus.Return((int)ErrorCodes.MaxNumberOfSameGamePerCartReached);
+			};
+		}
+	}
+
+- Why use Static Events?
+	* using non-static events is hard since the event might be fired by another object
+	* using exception is not ideal in SOA scenario, since the domain may raise events that blow up the service bus by puttig posing messages there
+
+Benefit of such domain
+- testable
+- isolate from environment
+- consistent	
+
+Comment:
+- how about huge data needed for validation (all items must not have lost record)?
+  (better have a object which cache the result for references)
+	- Ayende said to have a ICustomerInformationService that can do:
+		customerInformationService.WasGameReportedAsLost(customer, game);
+	- Ayende talked about using weak reference for event registration
+
+
+Evan Says: 
+February 29th, 2008 at 2:21 pm
+You could remove the garbage collection related noise by doing the following:
+
+1. Define a stateful event class (instead of a static event class)
+2. Use the stateful event class as part of a context (CallContext, RequestContext, etc).
+3. Make the event class implement IDisposable
+
+There are a number of implementation options depending on IoC/DI preferences.
+
+Inside service layer method:
+
+using (IFailureEvents events = IEventFactory.CaptureFailureEvents())
+{
+events.OnKaboom += FreakOut;
+
+//insert domain manipulation here
+}
+
+The events to the domain model can work just like ambient transactions..
+
+FailureEvents.Current.Kaboom();
+
+And of course, Dispose() takes care of dropping all the subscribed delegates.
+
+This also takes care of some nasty error conditions. As an example, your blog code above will leak memory if the domain model throws an exception inside cart.Add().
+
+Also, if I’m reading your code correctly, you are buggy for multiple threads. If Handle() is called concurrently in multiple threads, you may end up returning multiple error codes where you only wanted to return 1 (since the deletegates are attached to a static event–you may have many subscribers attached to it during concurrent execution).
+
+Evan
+
+
+Ollie Riches Says: 
+February 29th, 2008 at 2:48 pm
+Udi, are you saying that domain entities should reference the respository implementations internal for lazy loading techniques?
+
+I know you said this is not production quality code and is for demostration purposes but wouldn’t be benefical to wrap the event
+subscribe\unsubscribe into a disposable class so that you could use a ‘using’ statement which would then give you the automatic unsubscribing and no need for an explicit try\finally block etc…
+
+I’m also interested what Ayende means about overriding the default event handling etc.
+
+
+Ayende Rahien Says: 
+February 29th, 2008 at 4:54 pm
+For overriding, you do something like this:
+
+List<WeakReference> gameRentalsEvents;
+
+event EventHandler GameRental
+{
+add { gameRentalEvents.Add(value); }
+remove { gameRentalEvents.Remove(value); }
+}
+
+
+Nick Says: 
+February 29th, 2008 at 6:55 pm
+This is an issue I’ve been struggling with for some time and have asked about on the DDD and alt.net groups, but still have found no solution I’m happy with.
+
+Ayende, where would you use ICustomerInformationService? Would you pass it into the cart like LineItem Add(Game game, ICustomerInformationService customerInformationService)?
+
+It seems to me the problem comes down to this:
+
+1. We don’t want anemic entities, that is we want them to do stuff
+2. We want our objects decoupled
+3. We don’t want to use standard dependency injection techniques on our entities
+4. In order to do things, sometimes we need to use other objects
+
+So, the problem is, how do we make our entities aware of those other objects they need to do the stuff we want them to do?
+
+A couple suggestions that have been made:
+
+1. Don’t decouple (goes against 2 above)
+2. Use standard DI, e.g. have NHibernate inject the dependencies on object creation (goes against 3 above)
+3. Pass in the dependencies as an argument of the relevant method of the entity
+4. Break all such problems out into a domain service and call it from the service layer
+
+Each of these has its obvious problems. In truth, when I’ve tried 2, my API was certainly the nicest, though there is something about it that just feels wrong.
+
+I’m beginning to think there is no good solution and that if I want my domain to do stuff, I should just have a bunch of domain services and anemic entities.
+
+
+Ollie Riches Says: 
+March 1st, 2008 at 3:45 am
+Ayende, where is the advantage when overriding the event handlers?
+
+
+udidahan Says: 
+March 1st, 2008 at 6:44 am
+Ayende [1],
+
+> Does it really make sense to do so in the general case?
+
+Yes. It does. This is what the Domain Model is all about.
+
+> Assume that it is not lost games that you want to check, but all
+> games that were rented (to prevent bootlegging).
+> Now, you have a potential of a lot of entries in that collection,
+> vs. the relatively short amount that can be expected in lost games
+> collection.
+
+You have to remember that the Domain Model is part of the OLTP part of the system. Anything that deals with “all” of anything when that can be a large collection – doing that in an OLTP environment will kill your concurrency anyway. That then is handled outside the Domain Model – an OLAP issue.
+
+For instance, we could cache a snapshot (correct up until T – delta) of the ID’s of rented games in memory. I’d have a BootleggingPreventionMessageHandler which is configured to run before the AddGameToCartMessageHandler use that cached information to flag a problematic message.
+
+Not everything needs to be done in the Domain Model.
+
+Does that make sense?
+
+
+udidahan Says: 
+March 1st, 2008 at 6:49 am
+Evan,
+
+> you are buggy for multiple threads. If Handle() is called
+> concurrently in multiple threads
+
+Each message handler is a single-call object. Multiple handling threads using multiple instances of that class – so there’s nothing to worry about there.
+
+I am trying to work something into the configuration of nServiceBus so that message handlers will be automatically configured correctly.
+
+
+udidahan Says: 
+March 1st, 2008 at 6:52 am
+Ollie,
+
+> Udi, are you saying that domain entities should reference the
+> respository implementations internal for lazy loading techniques?
+
+Absolutely not.
+
+By using IList in my domain objects, the O/R mapper fills that with its own lazy-loading list implementation.
+
+So, while my domain objects effectively call into the O/R mapper’s lazy loading code, there is no dependency there.
+
+Does that make sense?
+
+
+Ollie Riches Says: 
+March 1st, 2008 at 7:18 am
+I meant to ask:
+
+‘are you saying that domain entities SHOULDN’T reference the respository implementations internal for lazy loading techniques?’
+
+Ollie
+
+
+Colin Jack Says: 
+March 4th, 2008 at 7:33 am
+Good post.
+
+We use a notification style rather than events (CanAdd/Add) but we are just supporting Web apps at the minute so we might need to look at events at some stage if that changes.
+
+
+Jesse Ezell Says: 
+March 4th, 2008 at 11:17 pm
+Udi, I don’t like your error handling approach at all right here. You are opening up consumers to all sorts of potential error handling nightmares. For example, suppose after the add call you have another action that is called. This action should be executing under the same transactional context. You don’t explicitly point out if your Bus return method would throw an exception or somehow abort the thread. If it doesn’t throw an exception or abort the thread, then we have a problem because after the call to the Return method, we will execute the second action, which will then get committed, even though the first action never happened. Additionally, even if the return method did throw an exception, there is still the possibility that you didn’t attach all the possible error handlers (or maybe at some point an additional error check is added to the Add method). If you forget to attach a handler, the error never bubbles up and again you have the same problem. Throwing exceptions instead would make it far easier to avoid this type of problem.
+
+You also have the possibility that an exception can be thrown inside the add method itself, which further complicates things and means you might need to handle errors in two completely different ways.
+
+Furthermore, there is a problem as soon as multiple threads start participating in this process. Since your events are static, an error on one thread could end up lauching the event handler that was actually intended to be used by another thread. Since the event doesn’t even contain a reference to the owner object, there isn’t even a way for your handler to know if it is being called as a result of the operations on its thread.
+
+So, this seems to cause quite a few messes that could be entirely avoided simply by throwing exceptions instead of trying to reinvent the wheel.
+
+
+udidahan Says: 
+March 5th, 2008 at 3:00 pm
+Jesse,
+
+Thank you so much for your comments. There’s a lot of meat in there. Let me try to address them one at a time:
+
+“suppose after the add call you have another action that is called. This action should be executing under the same transactional context.”
+
+The vast majority of messages result in calling a single method on the domain model. Well, that’s how my domain models are designed, anyway. Regardless, it is correct that it would be in the same transactional context.
+
+“You don’t explicitly point out if your Bus return method would throw an exception or somehow abort the thread.”
+
+The chance of Bus.Return throwing an exception is extremely low, as it is using store-and-forward messaging as well. In other words, even if the client we are responding to is offline, it would not throw an exception. I don’t currently see other ways it might abort a thread – and this is after seeing it in production over 3 years.
+
+“If it doesn’t throw an exception or abort the thread, then we have a problem because after the call to the Return method, we will execute the second action, which will then get committed, even though the first action never happened.”
+
+I’m not quite sure what you mean here, but I’ll hazard a guess. If you are referring to the fact that we might return a response to the client after the first method call, yet the second call may fail resulting in a rollback, then that would break isolation. Yet, once again, by using store-and-forward messaging that is transaction aware, the Bus.Return will be rolled back as well – ie, the response will not be sent to the client.
+
+“there is still the possibility that you didn’t attach all the possible error handlers (or maybe at some point an additional error check is added to the Add method).”
+
+The point is not necessarily to handle all error events but only those that it makes sense to let the client know about. If the database cannot be reached, that’s not something that the client/user could do anything about. Better to let an administrator know, and after the admin has fixed the problem, to allow him to replay the messages that failed previously due to that problem.
+
+“You also have the possibility that an exception can be thrown inside the add method itself, which further complicates things and means you might need to handle errors in two completely different ways.”
+
+Certain exceptions can’t (and shouldn’t) be handled by applicaiton code, like the DB being unavailable, or having the transaction being chosen as the victim of a deadlock. The only solution for those scenarios is to retry. If N retries have failed, move the messages to some other queue, from which the admin can return them after the problem has been rectified. Other than that, the domain model should be designed in such a way that exceptions won’t be thrown.
+
+On the issue of threading – you’re correct. I forgot to put the ThreadStatic attribute on the events. However, when moving to the weak-reference solution Ayende outlined, those delegates would be stored in something like ThreadLocalStorage.
+
+The problem with counting on exceptions, and catching them is handling those “unhandleable” exceptions – DB unavailable, deadlocks, out of memory, etc. Once you have to handle those robustly, then you may find your solution much more complicated without having transactions spans a store-and-forward transactional messaging communications layer. Also, you may still be thinking about single response semantics – but how does your solution work if you can return multiple responses?
+
+Sorry, that was an insincere question. I know the answer, and it’s that the solution doesn’t handle it well at all. The thing is that few developers consider the value of being able to response with multiple messages.
+
+Consider a simple “get all orders for customer” message, when that customer has millions of orders. If you try to bundle that all up into a single response, you’ll out-of-memory yourself – also known as denial-of-service yourself. If you can “stream” or “chunk” the data out of the database all the way through the messaging you can handle it much more elegantly.
+
+Well, this response is becoming longer than many of my posts, so I’ll stop here.
+
+Thanks again for your comments.
+
+
+Colin Jack Says: 
+March 6th, 2008 at 6:45 am
+@Ayende
+I thought I’d read old blog entries where you indicated you don’t use DI for entities because you like them to be stand alone (http://www.ayende.com/Blog/archive/2007/08/23/Dependency-Injection-in-a-Dynamic-Environment.aspx). Would you thus inject the service into the entity or call it from a higher layer?
+
+
+Jesse Ezell Says: 
+March 6th, 2008 at 1:37 pm
+Thanks for the response. I think I must not have been clear on the transaction issue. Here is code to illustrate a little better what I was trying to get at. Let’s say that instead of just calling Add, the method calls two methods in your domain model:
+
+cart.Add(g);
+tracker.AddHit(g);
+
+Suppose the Add method fires the failure event. The AddHit method will still execute and then be committed by the tx.Commit line below. However, you don’t want AddHit to be committed, because the Add call failed. Your approach requires users to handle all possible errors, while throwing exceptions safely aborts the transaction without any additional work. If you derive your exceptions from a common base class, you can always handle rule violation exceptions and convert them to fault messages instead of letting them go unhandled entirely and wind up causing poison messages.
+
+Keep in mind that throwing exceptions doesn’t prevent you from returning multiple rule violations or messages. This is still easy to do when throwing exceptions, you just have to allow the exception to contain a list of violations.
+
+
+udidahan Says: 
+March 6th, 2008 at 3:36 pm
+Jesse,
+
+It looks like you’re saying that things like auditing and hit tracking should not occur when the domain model decides it doesn’t want to update its data.
+
+I don’t think that that’s what you meant to say.
+
+And throwing exceptions cuts short the execution within the domain model – so while it doesn’t TECHNICALLY prevent multiple return messages, it prevents the rest of the domain stack from having its say.
+
+Hope that makes sense.
+
+
+Pavel Bazanov Says: 
+March 16th, 2008 at 5:07 pm
+Udi,
+I think Jesse meant that it’s not correct to call tracker.AddHit(g) after failure in cart.Add(g). But in your case it will be called even if cart.Add raises failure event.
+
+And I also think it’s not good.
+
+Please comment on this.
+
+
+udidahan Says: 
+March 17th, 2008 at 12:05 am
+Pavel (and Jesse),
+
+If there is some logical connection between what tracker.AddHit(g) and cart.Add(g) are doing, that should be expressed in the domain model. In other words, only after cart.Add(g) is successful should the domain cause tracker.AddHit(g) to be called.
+
+In order to handle all aspects of the problem in as simple a way as possible, each part of the solution has to follow certain rules. By having the service layer only call one method on the domain model, transaction management, error handling, and correctness all “just work”.
+
+I’m sure that getting a more generic solution to work is possible, however I find that it tends to be either much more work, or may leave certain scenarios unhandled (losing messages if the database is unavailable).
+
+Does that make things a little clearer?
+
+
+Yoni Rapoport Says: 
+March 18th, 2008 at 8:23 am
+I like the idea of introducing the Customer object and using it for validity checking but I think the FailureEvents class and its usage is a poor choice for monitoring failure to add a game. It adds unnecessary complexity and violates encapsulation. Instead, a simple object could be sent to the “Add” method and provide methods for addressing failures.
+
+
+Pavel Bazanov Says: 
+March 18th, 2008 at 1:45 pm
+I talked to one russian Software Architects (he is very very good in my opinion) today and he says, that usually he raises exceptions during data and business rules validation.
+
+
+Yoni Rapoport Says: 
+March 18th, 2008 at 5:00 pm
+Pavel, throwing and catching exceptions is also a violation of encapsulation. It is error prone, adds unnecessary complexity, and should generally be used as a last resort.
+I think that instead of trying to hide the fact that validation is being performed, one should explicitly provide an end-point for handling invalid data notifications.
+
+
+Pavel Bazanov Says: 
+March 18th, 2008 at 5:55 pm
+Why do you say it is error prone and adds unnecessary complexity. I don’t see any complexity at all.
+
+
+Yoni Rapoport Says: 
+March 19th, 2008 at 4:11 am
+Pavel,
+
+There are many subtle complexities which may only become apparent as the code evolves but here are two examples:
+1. Whenever you add a call to the “Add” method you should probably handle the various exceptions that may be thrown as validation occurs. This may become difficult as you begin to search the code of the “Add” method and all other methods being called from within “Add” to try and locate all of these exceptions.
+2. Whenever a new validation rule is introduces a new exception has to be thrown. Now a manual search must be made for all code which calls “Add” in order to make sure the exception is caught. Missing one of these calls can result in the exception propagating to a completely unrelated area of the application.
+
+The list goes on…
+
+
+udidahan Says: 
+March 19th, 2008 at 3:19 pm
+Yoni,
+
+The problem with passing some Errors object around is that it becomes difficult to take action in your code when an error occurs – events help solve that.
+
+I’ll be putting up a post describing more about the whole Failure Events “paradigm”.
+
+The complexity of remembering to remove event subscriptions will be handled by Ayende’s weak reference comment.
+
+
+udidahan Says: 
+March 19th, 2008 at 3:28 pm
+Yoni, with respect to Pavel’s comment,
+
+I don’t think that he’s necessarily talking about custom exceptions. The problem with any kind of exception is that it is difficult to know what to do with it – should we just retry the transaction? Should we send a message back to the client?
+
+We need one way of doing things that is robust, and then adjust our development practices around that. Otherwise, we’ll be continuously creating NP complete problems for ourselves around software stability and correctness. Well, that’s been my experience anyway.
+
+
+Yoni Rapoport Says: 
+March 19th, 2008 at 3:38 pm
+Udi,
+
+The “Error” objects which are passed are of course constructed as instances of classes which implement a certain “Error” interface. The same code you have placed in event handlers can be placed within such class.
+
+It will be interesting to see how you can prevent these events (which are defined in a static class and can be fired and handled from anywhere in the code) from becoming a debugging and maintenance nightmare in anything but the simplest of scenarios.
+
+
+Yoni Rapoport Says: 
+March 19th, 2008 at 3:59 pm
+Udi, with respect to you your last comment (No. 27),
+
+Well, the same questions can be asked about FailureEvents which are raised – “should we just retry the transaction? Should we send a message back to the client?”
+
+The answers should be explicitly represented in code.
+
+I’m not sure I understand what you mean by “one way of doing things”. I think you will find that sticking with encapsulation, by having an object communicate only with its members or objects which were passed to it, is extremely robust and flexible
+
+
+udidahan Says: 
+March 20th, 2008 at 4:48 am
+Yoni,
+
+When a failure event is raised – this is an applicative state, no amount of retrying is going to change that.
+
+The service layer / message handler decides which kinds of errors it want to notify the client about and just ignores everything else. This prevents the problem you outlined with custom exceptions.
+
+Exceptions occur in exceptional situations that the service layer code can’t really handle robustly by itself – the database can’t be reached, the transaction was chosen as the victim of a deadlock, etc. In these exceptional situations (that most developers don’t think about enough) retrying is the correct behavior – but only from a wider perspective. Transactions need to span the messaging layer as well in order to prevent message loss in case of server failure – in other words, we roll back the messaging layer as well.
+
+If a message gets retried N times, we consider the problem unsolvable at that point in time and move the message to an error queue. Administrators monitor that error queue, and can take action when they see messages piling up there.
+
+Deserialization exceptions are another kind of problem that needs similar error queue handling, but the whole N retry thing can be short-cutted at an infrastructure level.
+
+About the “one way of doing things”, in order to have a system-wide solution which takes into account exceptional situations like the above, preventing message loss, and working well with administrators, we find that the degrees of freedom we have in writing code for one part of the system are somewhat limited – which is OK. Rules prevent analysis paralysis, shorten training, lead to coding standards, etc.
+
+I agree that your error object pattern fits well with all the other system level issues, so now we can limit our discussion to domain model encapsulation, and service layer interaction. BTW, don’t think that there is only one static class with events, we can express other business events similarly.
+
+
+Pavel Bazanov Says: 
+March 20th, 2008 at 3:47 pm
+Yoni,
+With respect to your post, I will reply about your 2 example of subtle complexities.
+
+1. You don’t need to check the method you call for possible exceptions. First of all you should have a convention of exceptions which you throw inside BLL or DAL, so you always know which exceptions can be thrown. Second, you may write catch(Exception ex) to catch all possible exceptions, because usually all you need is to show user exception message.
+2. Again, you don’t need to search for all code which calls “Add” method if you add new validation. Because, first of all, if you add new validation, you can still throw same ValidationException (why do you need another new exception type for validation?). And second, again, you may have catch(Exception ex) and don’t care about different exception types.
+
+So, I wanna say, that you just need to create a convention of how you throw and handle exceptions in BLL and DAL and that’s all. So, with respect to your opinion, I think that “subtle complexity” is something you just thought up, not a real complexity.
+
+
+Yoni Rapoport Says: 
+March 20th, 2008 at 5:09 pm
+Pavel,
+
+I guess that for the simple scenario you describe, in which every validation error is handled in the exact same way and all validation failures can be represented using a single class, this will work. I still think that even having to adhere to such convention is error prone because that’s one more thing to remember and one more thing to teach your successor. In addition, I also still think that for your simple scenario an “Add(Game game, System.Action validationFailure)” method will result in shorter and more robust code:
+
+cart.Add(game, delegate(string messageToUser) { // show user message });
+
+
+udidahan Says: 
+March 21st, 2008 at 3:21 pm
+Yoni,
+
+What would you do if that code ran server side?
+
+
+Yoni Rapoport Says: 
+March 22nd, 2008 at 3:27 pm
+Udi,
+
+If your intention is asking what I would do if the caller of cart.Add and the implemntation of cart.Add resided on two seperate tiers then I guess I would provide a client-side proxy of TradeInCart which will conduct the relevant communication with the server. If the communication is such that the server cannot initiate calls back to the client then an appropriate request/response mechanism should be wrapped around the “Add” call – namely validation failures should be stored and returned to the client after the method returns.
+
+I hope I understood your question correctly. I am not sure how the usage of message handlers provides a better solution to the issue of distributed programming in this case. More importantly, I think it is a mistake to include technical considerations such as performance or network distribution when discussing software design. Well designed software will always allow for future technical improvements.
+
+I always advise to write well designed, testable code first and only later worry about performance and deployment scenarios.
+
+
+udidahan Says: 
+March 23rd, 2008 at 4:57 pm
+Yoni,
+
+I guess my question targeted your “show user message” comment, specifically the delegate part of it.
+
+I’m afraid that on the issue of performance/distribution we’ll have to disagree – some things can’t be solved after the fact. Now, as a result of my consulting practice, I may tend to see a larger percentage than most where that occurs. The result is usually a redesign/rewrite.
+
+Not that I’m against well designed, testable code mind you 
+
+
+udidahan Says: 
+June 20th, 2008 at 1:12 am
+One last thing, in terms of correctness under a multi-threaded execution environment when using Ayende’s proposed solution – just mark the list with the [ThreadStatic] attribute.
+
+It would be nice if there was a library that wrapped this up, wouldn’t it?
+
+
+Domain Events - Take 2 Says: 
+August 25th, 2008 at 7:41 am
+[...] previous post on how to create fully encapsulated domain models introduced the concept of events as a core pattern of communication from the domain back to the [...]
+
+
+Elegant Code » Decoupled Domain Models Says: 
+August 26th, 2008 at 12:26 pm
+[...] has written about How to create fully encapsulated Domain Models in the past (make sure to read the comments) and has further refined this approach in one of his [...]
+
+
+Morten Lyhr Says: 
+September 6th, 2008 at 3:36 pm
+I think your solution is complex and a bit over architected.
+
+You can see my solution here: http://morten.lyhr.dk/2008/09/how-to-create-fully-encapsulated-and.html
+
+
+Colin Jack Says: 
+September 8th, 2008 at 3:41 pm
+Trying to re-read this and I think there are maybe a couple of things going on here:
+
+1) Dependencies – Avoiding domain having external dependencies, this was what the original question was about in relation to rule 3. You’ve solved it by just having a collection on the entity, avoiding the need to go to the repository.
+2) Handling any failures – Which is where events come in.
+
+The two approaches can be used seperately and its the second one that I guess is more interesting…
+
+“The only problem is that the Domain Model needs to know that the service layer had a default catch clause so that it wouldn’t blow up. Otherwise, the service layer (or WCF, or nServiceBus) may end up flagging that message as a poison message (Read more about poison messages). You’d also have to be extremely careful about in which environments you used your Domain Model – in other words, your reuse is shot.”
+
+I see it a little differently. My domain classes allow other layers to ask questions, so you can ask can I do this? If the answer is no then you are given a nice Notification style object full of useful information explaining why the operation cannot be done. If however you ignore this nicety and try to proceed with the action anyway then we raise an exception (exceptions being useful when a method cannot do what it was designed to do).
+
+Exceptions are thus very rare and generally indicate a programming bug, you forgot to check that the operaiton was possible.
+
+As you say if the caller does not pay attention and we do throw an exception then it might cause a failure, but then the equivalent of not catching an exception is not attaching to the error event handler and is it really better for the system to continue on after that happens?
+
+You can also solve the retry/multiple responses issues, I’ve definitely had exceptions that we caught and retried and bulked up errors into one exception and both worked well.
+
+Despite using them my main problem with exceptions is that if you get all sorts of layers catching exceptions then it gets difficult to impose a policy that enforces consistent handling for particular types of exception. However this doesn’t invalidate the whole approach.
+
+“In order to handle all aspects of the problem in as simple a way as possible, each part of the solution has to follow certain rules. By having the service layer only call one method on the domain model, transaction management, error handling, and correctness all “just work”.”
+
+Let me check I understand. Lets say that within the single domain method we need to coordinate some work accross two aggregates, each is being updated. The update to the first fails and we raise the appropriate FailureEvent, the domain service/method has already subscribed to this event and its handler ensures we don’t continue with the update to the second aggregate. In addition the event is then also handled by the service layer. Does this sum up the approach?
+
+
+Daniel Says: 
+September 9th, 2008 at 6:24 am
+I know I am many months late, but I just happened to see this today and fits nice with what I am doing right now.
+What would happen if the values that you access through CONSTANTS would come from configuration? Would it be hard to test the entity as you would depend implicitly on configuration?
+Would it be fine have a dependency on IConfiguration in our entity? Would the repository method Get() the place to inject that dependency using some sort of Service Locator?
+
+thanks in advance
+
+
+udidahan Says: 
+September 10th, 2008 at 2:15 pm
+Daniel,
+
+About the CONSTANTS – you’d have to set up some kind of injection for your entities, currently not well supported by the ORM tools.
+
+There’s a deeper issue here around who can change the behavior of the domain, and how, and who tests that the domain behaves correctly under the new config, and if this impacts data already saved in the database.
+
+In short, there’s no silver bullet.
+
+
+udidahan Says: 
+September 10th, 2008 at 2:53 pm
+Colin,
+
+> My domain classes allow other layers to ask questions, so you can ask can I do this?
+
+I’m afraid that that violates the “tell, don’t ask” principle of OO.
+
+Also, by and large you don’t have single methods updating across aggregates. The cases where I’ve seen that happen were where the domain model was too big, trying to capture rules across multiple contexts.
+
+
+Colin Jack Says: 
+September 14th, 2008 at 10:56 am
+> I’m afraid that that violates the “tell, don’t ask” principle of OO.
+
+Depends, if a behaviour crosses aggregates then I think its fine to ask each aggregate whether they want to proceed before starting. Plus if you don’t ask you can still tell them what to do and they will in turn tell you if they can’t fulfil their part (using an exception).
+
+> Also, by and large you don’t have single methods updating across
+> aggregates. The cases where I’ve seen that happen were where the
+> domain model was too big, trying to capture rules across multiple
+> contexts.
+
+Not sure I agree with that, I’ve quite often seen multiple aggregates involved in a transaction. For example if you use party archetype then the party and its role or a relationship could all be involved. Guess it depends on how your domain model is designed though.
+
+
+Nick Says: 
+September 21st, 2008 at 9:04 pm
+I’m not sure how it violates ask/dont tell. Isn’t that basically the same as command/query separation? In this case, all Colin is doing is querying.
+
+
+udidahan Says: 
+September 21st, 2008 at 11:42 pm
+Colin,
+
+I’d argue for a saga across aggregates.
+
+
+udidahan Says: 
+September 21st, 2008 at 11:43 pm
+Nick,
+
+In CQS, you don’t query against the transactional data – so that wouldn’t really hold here.
+
+
+Pete Grazaitis Says: 
+December 16th, 2008 at 3:44 pm
+I know that by default the public exposure of Properties for NHibernate ORM allows for easy adoption of the Anemic anti-pattern.
+
+By locking down the set’s to internal,private, or protected you can give NHibernate special set access via the proxy but keep the entities better encapsulated.
+
+However, I have noticed that for collections, like Lists/Bags we may lock down the setter but leave the get public. The problem here is that I can then add/remove items directly from the collection and avoid any Add/Remove methods that employ business logic.
+
+Do you have a recommended solution to avoiding this possibility? My guess is that you would make the mapping use field level access and avoid a Property altogether.
+
+My next issue, is NHibernate specific, so I apologize if this is outside the scope. If the desired solution is field level access, how would this work if I define my class as an interface within the mapper with concrete classes defined as subclasses? Would I have to define that particular property on every subclass?
+
+
+udidahan Says: 
+December 17th, 2008 at 2:16 pm
+Pete,
+
+You can expose collections as IEnumerable so that there won’t be any Add/Remove methods available.
+
+On your NHibernate specific question, you wouldn’t do anything different in the mapping to work with these interfaces. Just use Ayende’s repository wrapper around it.
+
+
+Nuno Lopes Says: 
+February 2nd, 2009 at 4:45 pm
+Wow I’m so late.
+
+I like the nServiceBus idea (it seams that you are using it right?).
+
+Consider a Web Application where this service is in assembly that is directely referenced.
+
+Using that scheme, what would the caller of the AddGameToCartMessageHandler have to do to check for errors?
+
+Do you have any framework that we can read to understand this? I mean
+BaseMessageHandler, what is this? What does it do?
+
+If it what I think it is I like in principle, but would like to see it further 
+
+Nuno
+
+
+Nuno Lopes Says: 
+February 3rd, 2009 at 12:28 pm
+Hello,
+
+Started commenting the ideas presented regarding modeling the domain, but it started to be too long. So I stopped, put together the ideas contrasting and complementing the one presented here on an article in my Blog.
+
+Just started blogging my mind away last weekend so please fill free to point out some deadlocks of mine, I can only learn and share.
+
+Here it is:
+
+http://movablesharp.blogspot.com/
+
+
+udidahan Says: 
+February 4th, 2009 at 10:33 am
+Nuno,
+
+> Consider a Web Application where this service is in assembly that is directely referenced.
+
+It doesn’t work like that. The web app would send a message to a different process which would run the above service layer.
+
+You can find out more about nServiceBus on the site http://www.NServiceBus.com. Take a look at the overview section.
+
+
+Nuno Lopes Says: 
+February 4th, 2009 at 4:25 pm
+I see, now I understand. Thank you very much for your answer Udi.
+
+I reviewed the post in my blog as the English was really bad. If you care to read it (or re-read it) Udi and pass on some comments would be really a learning experience.
+
+It mainly addresses the Domain Model for the example you used but in a different and better way (at least IMHO).
+
+What may interest you is that I may be wrong but my approach to the Domain Model and the way you propose Domain Errors to be reported back to the caller don’t mingle that well. At least I don’t see a recurring technique to apply them. Especially when Domain Objects call each other services to perform their activity.
+
+That is why I don’t like how errors are reported.
+
+Nuno
+PS: Has you may have guessed already, English is not my mother language, so I’ll try to be carefull so that my impressions can get across without much effort.
+
+
+udidahan Says: 
+February 6th, 2009 at 9:06 am
+Nuno,
+
+Your English is perfectly understandable – no worries 
+
+I did go through some posts on your blog – looks like good stuff. Welcome to the conversation.
+
+
+Domain Events - Salvation Says: 
+June 14th, 2009 at 6:34 am
+[...] It started by looking for how to create fully encapsulated domain models. [...]
+
+
+Thomas Says: 
+July 7th, 2009 at 2:58 pm
+Check out this summray of Craig Larman’s view on this:
+http://blogbustingbeats.wordpress.com/2009/07/07/405/
+
+
+udidahan Says: 
+July 9th, 2009 at 7:10 am
+Thomas,
+
+I read through the post and it describes Craig Larman’s view on *Problem Domain Object Models*, not the Domain Model software artifact I’m describing in this post – I’m afraid it’s a bit of an apples to oranges comparison.
+
+I do think that more developers should know about the kind of modeling you describe in your post, though.
+
+Thanks for the link.
+
+– Udi
+
+
+Paul Linton Says: 
+July 16th, 2009 at 1:04 am
+I really liked your ‘Make Roles Explicit’ talk and found your web site as a result. The method you describe here to handle Domain events seems like it will fix a particular problem I have in my Domain where an action on a Customer should cause various Accounting action to take place.
+Can you clear up for me a couple of questions?
+In DomainEvents there is a comment next to the Container declaration “as before”, I can’t find the earlier reference.
+I assume IContainer is some DI container (StructureMap?) which raises the question of “Where does the DomainEvents class live”? If it goes in the Domain then the Domain depends on the DI container, if it goes in a Service layer then the Domain depends on that service layer. Or is IContainer some abstraction of DI defined in the Domain?
+Will I be in a state of sin if I call the Handles interface IHandle (seems to fit the IWashDishes thought process)?
+
+
+udidahan Says: 
+July 17th, 2009 at 8:40 am
+Paul,
+
+Don’t worry about the “as before” as the code was taken from an article in which it was developed bit by bit.
+
+The DomainEvents class is infrastructure, below both the Serivce Layer and the Domain Model.
+
+On the name IHandle, might I suggest maybe IHandleDomainEvents instead.
+
+Thanks for your comments.
+
+
+Richard Says: 
+March 7th, 2011 at 2:01 pm
+Domain events?? Events are evil. The Specification Pattern works a lot better than this solution proposed, and exceptions are enough. No need to create this domain event thing.. why the need to reinvent the wheel??
+
+
+udidahan Says: 
+March 7th, 2011 at 4:33 pm
+Richard,
+
+I respect that that is your opinion.
+
+
+caesar.guok Says: 
+March 22nd, 2011 at 2:58 am
+Hi, Udi,
+I’v met some problemns, when I want to do some Domain Patten practices.
+Maybe someone before talked about this topic.
+Refer to your code, if some rules in the domain model were not passed, how can I stop the next tx.commit() operation? Because the values include in the model object aren’t what the business progress need.
+And then, if I create a series of model, but as you mentioned, the model objects shouldn’t be entity objects which depends on database. How can I do a convertion between model objects and entity objects?
+
+Thanks in advance.
+
+Yours Caesar
+
+
+udidahan Says: 
+March 23rd, 2011 at 1:44 pm
+Caesar,
+
+Read up on some of my CQRS stuff in which I explain that commands that could fail should not be sent by clients in the first place.
