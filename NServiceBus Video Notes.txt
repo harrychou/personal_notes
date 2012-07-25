@@ -1,0 +1,43 @@
+
+Andreas Ohlund
+http://skillsmatter.com/podcast/open-source-dot-net/nservicebus-3
+What's new with NServiceBus 3.0?
+- basics of NServiceBus
+- current release 2.6
+- 3.0 goal: better out of box experience
+	* more guildline/conventions
+- agenda
+	storage
+	naming endpoints (key to 3.0)
+	hadling time (timouts)
+	bridge remote sites/apps
+	random stuff
+
+- what is bus anyway?
+	common confusion: with broker
+	bus is like ethernet
+		- no centralized machine
+		- it is everywhere, helping services talk to each other
+		- has logical addresses (sperate from physical)
+		- load balanace capability
+	unlike eithernet
+		- publish/subscribe
+		- message ID
+		- need to store things
+
+- each endpoint need a storage
+	- saga
+	- subscriptions
+	- timeouts
+	- for distributers, keep track of available workers
+	- retry (deduplication)
+
+- need to scale out, shared storage
+
+- 3.0 using RavenDB as storage
+	bundled with NServiceBus
+	still support NHibernate, but moved to other DLL
+	easier to work with RavenDB
+	fast, support transactions
+
+- 11:00
