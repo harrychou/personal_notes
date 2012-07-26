@@ -38,6 +38,35 @@ What's new with NServiceBus 3.0?
 	bundled with NServiceBus
 	still support NHibernate, but moved to other DLL
 	easier to work with RavenDB
-	fast, support transactions
+	fast, support DTC transactions
 
-- 11:00
+- Naming the endpoints (convention over configuration)
+	* make sure you give endpoint a good name
+	* if endpoint call order
+		- DB name: orders
+		- input queue Orders
+		- timout queue: Orders.Timeouts
+		- url of gateway: http://localhost/orders
+
+- naming endpoints
+	* default to namespace
+	* use attributes
+	* set when install: /serviceName:Orders
+	* Configure.DefineEndpointName(...)
+
+- 16:30 showing how Saga is stored in RavenDB
+	* show RavenDB
+	* show queue names
+	* shoing how RavenDB store the Saga message
+
+- error queue should be in a centralized queue somewhere
+
+- Timeout
+	- in V2.6, timeout is a separate host
+	- in 3.0, timout manager is within the endpoint
+		* when timeout expired, the message will send back
+		* Bus.Defer<T>(...)
+			- I want to handle it later, ex. I want to handle it next week (waiting for another piece of info)
+
+-- 29:00		
+	
