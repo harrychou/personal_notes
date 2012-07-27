@@ -68,5 +68,15 @@ What's new with NServiceBus 3.0?
 		* Bus.Defer<T>(...)
 			- I want to handle it later, ex. I want to handle it next week (waiting for another piece of info)
 
--- 29:00		
-	
+-- Master and Worker Node
+-- Data Bus
+	* overcome the MSMQ size limit of 4MB
+
+-- other features
+	* unobstrusive mode (don't have to reference NServieBus.dll)
+		- upgrade NService without breaking existing code
+	* DatabusProperty<T>
+	* ISendMEssages / IReceiveMessages
+	* Modelling Tools
+	* Exception details attached to messages in the error queue
+	* Client side pipeline	
