@@ -1,0 +1,115 @@
+
+
+## JavaScript browser events
+
+Browser Events:
+
+* Page Lifecycle Events
+    * Page finish loading
+    * Page to be unloaded
+* Network Events
+	* Ajax requests
+* User Events
+	* mouse click, mouse move, ... etc
+* Timer Events
+
+## Concurrency
+
+Run more than one things at the same time
+
+Why?
+
+* UI responsiveness (Windows UI)
+* Handle multiple requests without blocking each other (Web Server)
+* Distribute work to multiple CPUs for computation intense jobs
+* Speculative execution (try to get work done before it is required)
+
+## Threading
+
+Native support at OS level
+
+Enhanced at CLR level (ThreadingPool)
+
+CLR garbage collection and finalizer is on different thread
+
+<pre>
+class Class {
+	This is OK
+}
+</pre>
+
+* Enhanced at CLR level (ThreadingPool)
+
+
+
+-------------------------------
+
+JavaScript Introduction
+
+String
+Boolean
+
+Review 
+
+<html><body><script src='my.js'></script></body></html>
+
+Regular Expression
+	/\d{5}/
+	/\w{2}\w+/
+	reg.test(str)
+	str.replace(reg, newStr)
+
+parse/load the html
+	create DOM structure
+see <script src= .... 
+	load the script file, run the script
+	update DOM if needed
+keep parsing/loading
+	update DOM
+load/run script if <script> encountered
+	update DOM if needed
+
+
+
+Object
+	collection of key-value pairs
+	Constructor
+		It is a function
+		All functions are objects
+		All functions have a prototype property which point to an object
+		It is a special function
+Function
+	functions are objects
+	functions can be invoked
+
+
+DIRTy applications
+	DI: Data-Intensive
+	RT: Real-Time 
+
+Node.js
+	- lightweight no I/O
+	- good for shuffling data
+	- keep connection open
+	- small memory footprint
+	- responsive
+
+Example of Node.js App: Browserling
+	- StackVM to manage VMs
+	- QEMU: quick Emulator
+	- Browserling takes keyboard/mouse input, replay against emulated browser, receive result, paint it on canvas
+
+Javascript on server side
+	- runtime environment
+		* instead of browser, the node runtime provide the host
+	- reimplent common environment functionalities (to keep consistency between browser and server)
+		* timer
+		* console
+	- server-side specific feature (as modules)
+		* HTTP: to handle HTTP request/response
+		* TLS
+		* HTTPS
+		* filesystem (POSIX)
+		* Datagram (UDP)
+		* NET (TCP)
+	- as a platform, not a framework
