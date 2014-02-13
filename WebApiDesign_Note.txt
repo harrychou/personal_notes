@@ -1,0 +1,30 @@
+=========================
+CH01
+=========================
+
+What is web api?
+	- RPC over HTTP
+		* HTTP verbs
+		* URL, caching ... etc over HTTP
+	- Restful
+		* Resource URIs
+		* HTTP Verbs
+		* Stateless Servers (load balance possible, idenpotence - allow operations to be applied multiple times)
+		* Content Negotiation (client decide the format)
+	- HATEOAS: hypermedia as the engine of application state
+		* Allow linking and form for furthur actions
+
+Resource Based Architecture
+	- thinking in terms of Resources
+	- Resources can be nested
+		* Employees/1/Timesheets
+		* Timesheets/?dept=HR&start=2014-01-01&end=2014-02-01
+	- Hierarchies or Document/Web-based, not relational model
+	- Identified by URIs
+		* use query string if needed
+
+Be pragmatic about being Restful
+	- It's good to conform to REST-style architecture principles
+	- but conforming to it does not take away the need for client to learn about the business model and requirements
+	- in many/most cases, REST is the right approach for providing API over http
+
