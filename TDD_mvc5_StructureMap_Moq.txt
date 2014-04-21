@@ -1,0 +1,81 @@
+How to do TDD with MVC5, StructureMap and Moq
+
+1. create a MVC 5 app
+2. run the app, make sure it is working
+3. Nuget StructureMap.MVC4
+4. create a controller, do 'contructor injection'
+  - create a controler that takes an Interface
+  - use the interface object perform some work
+
+    public class HomeController : Controller
+    {
+        private readonly INameProvider _nameProvider;
+
+        public HomeController(INameProvider nameProvider)
+        {
+            _nameProvider = nameProvider;
+        }
+        
+        ... 
+        
+    public interface INameProvider
+    {
+        string GetUserName();
+    }
+
+    public class FakeNameProvider : INameProvider
+    {
+        public string GetUserName()
+        {
+            return "Harry Chou";
+        }
+    }
+    
+5. StructureMap.MVC4 should have created a Ioc.cs file under DependencyResolution folder
+
+namespace Vs2012Mvc5Moq.DependencyResolution {
+    public static class IoC {
+        public static IContainer Initialize() {
+            ObjectFactory.Initialize(x =>
+                        {
+                            x.Scan(scan =>
+                                    {
+                                        scan.TheCallingAssembly();
+                                        scan.WithDefaultConventions();
+                                    });
+                            x.For<INameProvider>().Use<FakeNameProvider>();
+                        });
+            return ObjectFactory.Container;
+        }
+    }
+}
+
+6. Run the app again, make sure it works fine
+
+7. Create a unit test project 
+
+8. Add Moq to the unit test project
+
+9. Create AAA (arrange, act, assert) style testing
+
+namespace UnitTestProject1
+{
+    [TestClass]
+    public class DummyMvcControllerTest
+    {
+        [TestMethod]
+        public void TestUsingMoqToMockDependentObject()
+        {
+            // arrange
+            var nameProvider = new Mock<INameProvider>();
+            nameProvider.Setup(x => x.GetUserName()).Returns("Isaac Chou");
+
+            // act
+            var result = new HomeController(nameProvider.Object).Index() as ViewResult;
+
+            // assert
+            Assert.IsNotNull(result); 
+            Assert.AreEqual("Isaac Chou", result.ViewBag.UserName as string);
+        }
+    }
+}
