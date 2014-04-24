@@ -1,0 +1,5 @@
+---------------------------
+Copy file(s)
+---------------------------
+Copy-Item C:\path-to-files\SMB.API.Residential.* C:\new-path-to-file
+
