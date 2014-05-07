@@ -1,3 +1,8 @@
+Good math book: 
+http://courses.csail.mit.edu/6.042/fall13/mcs.pdf
+
+![Math stuff](http://latex.codecogs.com/gif.latex?x%3D%5Cfrac%7B-b%20%5Cpm%20%5Csqrt%7Bb%5E2%20-%204ac%7D%7D%7B2a%7D)
+
 2^j * 6 (n/(2^j)) = 6n >> for any givien level j, the running time is only related to the total size
 6NlogN + 6N
 -------------------------------------------------------------------------
