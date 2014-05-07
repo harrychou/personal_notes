@@ -1,0 +1,8 @@
+2^j * 6 (n/(2^j)) = 6n >> for any givien level j, the running time is only related to the total size
+6NlogN + 6N
+-------------------------------------------------------------------------
+Guiding Principles:
+1. 
+2. 
+3. Asympotic Analysis: focus on running time for large input size n.
+
