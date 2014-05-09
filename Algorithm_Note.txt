@@ -1,13 +1,42 @@
 Good math book: 
 http://courses.csail.mit.edu/6.042/fall13/mcs.pdf
 
-![Math stuff](http://latex.codecogs.com/gif.latex?x%3D%5Cfrac%7B-b%20%5Cpm%20%5Csqrt%7Bb%5E2%20-%204ac%7D%7D%7B2a%7D)
 
 2^j * 6 (n/(2^j)) = 6n >> for any givien level j, the running time is only related to the total size
 6NlogN + 6N
 -------------------------------------------------------------------------
+
+Guilding Principles for Analyzing of Algorithms:
+
 Guiding Principles:
-1. 
-2. 
+1. Worst Case analysis
+  - our running time bound will hold for every input of length of n
+  - particulary appropriate for "general-purpose" routines
+  Apposed to: 
+    - average case
+    - bench march
+  - make it easier to analyze
+2. Won't pay much attention to constant factor and lower-order terms
+  - why?
+    * way easier
+    * contant factor varies a lot depending on programming lanauges/ platforms
+    * lose very little predictive power
 3. Asympotic Analysis: focus on running time for large input size n.
+  - that's why we can ignore the lower order
+  - only big problems are interesting, you don't need algorithms for smaller size problems
+  - even for relatively moderate size like 1500, NlogN is much better than N^2
+  
+Fast Algorithms
+  - worst case running time grows slowly with input size
+
+Holy Grail
+  - linear running time or close to i
+
+-------------------------------------------------------------------------
+
+Asymptotic Analysis - the Gist
+
+Importance: vocabulary for the design and analysis of algorithms (big-O notations)
+
+
 
