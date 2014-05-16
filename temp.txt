@@ -1,6 +1,27 @@
-Map to running place 
+Modern Web Essentials Using JavaScript and HTML5
+http://www.infoq.com/minibooks/javascript-html5-essentials
 
-https://goo.gl/maps/9imMh
+InfoQ eMag: Scalability
+http://www.infoq.com/minibooks/emag-scalability
 
-www.mapmyrun.com/routes/view/411969014
+InfoQ eMag: REST
+http://www.infoq.com/minibooks/emag-rest
+
+InfoQ eMag: Lean & Kanban
+http://www.infoq.com/minibooks/emag-lean-kanban
+
+Continuous Delivery Overview - Value proposition, definitions, principles, core practices, and tools
+http://www.infoq.com/minibooks/continuous-delivery-overview
+
+Agile with Guts - A pragmatic guide to value-driven development
+http://www.infoq.com/minibooks/agile-guts
+
+InfoQ eMag: DevOps War Stories
+http://www.infoq.com/minibooks/emag-devops-war-stories
+
+Getting Value out of Agile Retrospectives - A Toolbox of Retrospective Exercises
+http://www.infoq.com/minibooks/agile-retrospectives-value
+
+The 3 Pillars of Personal Effectiveness
+http://www.infoq.com/minibooks/three-pillars
 
