@@ -1,3 +1,9 @@
+* learn python programming #learning
+* check out books below @home #learning
+
+
+==============================================================
+
 Modern Web Essentials Using JavaScript and HTML5
 http://www.infoq.com/minibooks/javascript-html5-essentials
 
