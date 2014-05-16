@@ -1,5 +1,7 @@
 import sys # Load the sys module
 
+# to execute: python 03_list_example.py test.dat
+
 if len(sys.argv) != 2: # Check number of command line arguments :
 	print("Please supply a filename")
 	raise SystemExit
