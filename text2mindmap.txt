@@ -1,0 +1,13 @@
+Latex: is it too difficult?
+  * http://www.texample.net/tikz/examples/feature/mindmaps/
+GNU Clad: seems to be only for tree structure, but very cool timeline tool
+  * https://launchpad.net/gnuclad
+Very simple tool: but too limited
+  * https://www.text2mindmap.com/
+  * should have better graphics
+  * multiple connections between nodes
+  * better color control
+  * be able to embbed would be ideal
+  * this can be a great idea
+  * convert to todo items
+  * convert to calendar items
