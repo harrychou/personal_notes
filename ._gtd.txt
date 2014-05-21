@@ -13,4 +13,14 @@ Monday
   http://timesheet.aci.com/time/ts_form.cfm?pmid=9&oid=12
   hchou, lancaster
 
+- Project I should charge
+  http://spapps.constellation.com/cne/mmops/Lists/Issues%20Tracker/AllItems.aspx
+  * Use the view for the relevant group to look at the top priority issues for that area
+  * Look at the “IT Assignments” column to see items assigned to you
+  * Look at “IT Charge Activity”, if it is one of 17 specific items marked as regulatory you should be charging the Texas Stabilization Codeblock (ITCM081SW - 0801300601), if it is blank you should be charging the SURGE Codeblock (TBA)
+  * Each item that is actively being worked and will need to be deployed we will need an AWR, and the AWR number should be updated in the list
+  * If you are not sure what you should be working on check with the IT lead and business lead
+
+
+
 Quarterly
