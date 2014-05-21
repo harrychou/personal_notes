@@ -1,3 +1,8 @@
+List of all softwares:
+ http://en.wikipedia.org/wiki/List_of_concept_mapping_and_mind_mapping_software
+
+==========
+
 Latex: is it too difficult?
   * http://www.texample.net/tikz/examples/feature/mindmaps/
 GNU Clad: seems to be only for tree structure, but very cool timeline tool
