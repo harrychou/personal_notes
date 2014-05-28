@@ -1,0 +1,70 @@
+{
+  "title": "TODOs",
+  "id": 1,
+  "formatVersion": 2,
+  "ideas": {
+    "1": {
+      "title": "Add Child",
+      "id": 2,
+      "attr": {
+        "attachment": {
+          "contentType": "text/html",
+          "content": "test&nbsp;<div>test</div><div><br></div><div>test</div>"
+        },
+        "style": {}
+      }
+    },
+    "0.5": {
+      "title": "Another Child",
+      "id": 3
+    }
+  },
+  "attr": {
+    "measurements-config": [
+      "test"
+    ],
+    "progress-statuses": {
+      "": {
+        "description": "Not Started",
+        "priority": 1,
+        "style": {
+          "background": false
+        }
+      },
+      "passing": {
+        "description": "Done",
+        "style": {
+          "background": "#00CC00"
+        }
+      },
+      "under-review": {
+        "description": "Under review",
+        "style": {
+          "background": "#00CCFF"
+        }
+      },
+      "in-progress": {
+        "description": "In Progress",
+        "priority": 3,
+        "style": {
+          "background": "#FFCC00"
+        }
+      },
+      "blocked": {
+        "description": "Blocked",
+        "priority": 4,
+        "style": {
+          "background": "#990033"
+        }
+      },
+      "parked": {
+        "description": "Parked",
+        "priority": 2,
+        "style": {
+          "background": "#FF3300"
+        }
+      }
+    },
+    "style": {}
+  }
+}
