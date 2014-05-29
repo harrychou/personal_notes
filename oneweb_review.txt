@@ -1,0 +1,14 @@
+tight coupling with CRM (Siebel)
+DB integration
+Synchronous Model
+Monolothic Design
+Tight Coupling between Services
+Time coupling (certain things need to be executed between other things)
+Error reporting issues
+Too many new
+Web strategy - Js or not Js, HTML5 or not Html5
+Mobile strategy - native or Html?
+Automation - Deployment
+Automation - Quality Assurance
+Automation - Integration/Unit Tests
+User Acceptance
