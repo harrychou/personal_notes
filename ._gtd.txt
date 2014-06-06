@@ -12,7 +12,7 @@ Monday
   http://myexelon.exeloncorp.com/ToolsAndApplications/Pages/Home.aspx
 - ACI tempus
   http://timesheet.aci.com/time/ts_form.cfm?pmid=9&oid=12
-  hchou, lancaster
+  hchou
 
 - Project I should charge
   http://spapps.constellation.com/cne/mmops/Lists/Issues%20Tracker/AllItems.aspx
