@@ -1,0 +1,10 @@
+
+Three basic patterns:
+	Fire and Forget 
+		- session finishes when email was sent to the server
+	Request and Response
+		- session finishes when response email was received by the caller
+	Publish and Subscribe 
+		- session finishes when all subscribers receive the message
+
+Failure
