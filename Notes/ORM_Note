@@ -1,0 +1,58 @@
+ORM
+
+Business Application
+  Display Stuff: Objects work together to perform tasks > Display info on screen
+  Create Stuff: New Objects, maybe based on some existing objects 
+  Update Stuff: Existing objects, change relationship of objects, or change data elements of the object
+
+Data Persistence
+  No matter what, we need to store data
+  Relational DB is the defacto standard for businesses
+  Others: Object DB, Files, XML, Document DB, Key-Value Store ...
+
+ORM: because Objects and Relational DB do not match 100%
+
+  * inheritance
+  * enum
+  * association between objects: reference, in the list
+  * id
+  * objects are always in memory / no loading necessary
+  * value types not always in its own table
+
+Microsoft Strategy
+
+  * ADO
+  * ADO.NET
+    - DataRow
+    - DataSet (Typed)
+  * Linq2Sql
+  * EntityFramework
+
+OneWeb Strategy
+
+  * StoredProcedure > DataRows > Manual Mapping
+    - issues
+      * always need to update two places
+      * duplicated code
+      * manual mapping woes
+      * business logic in two or more places
+  * EntityFramework (M4, NotificationService)
+
+Entity Framework
+
+  * Model centric
+  * Approaches:
+    - Database-driven
+    - Model-driven
+    - Code-First
+  * T4 Template
+
+NHiberate
+
+ORM Concepts
+
+  * Bounded Context
+  * Repository
+  * Unit of
+
+MicroORMs

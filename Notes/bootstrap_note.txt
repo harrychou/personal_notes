@@ -1,0 +1,53 @@
+Bootstrap CDN
+- bootstrap
+	- <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+	- <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css">
+	- <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+- Font Awesome
+	- <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.no-icons.min.css" rel="stylesheet">
+	- <link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.min.css" rel="stylesheet">
+- Bootswatch
+	- <link href="//netdna.bootstrapcdn.com/bootswatch/3.0.0/spacelab/bootstrap.min.css" rel="stylesheet">
+	- <link href="//netdna.bootstrapcdn.com/bootswatch/3.0.0/cerulean/bootstrap.min.css" rel="stylesheet">
+
+Do we still need FontAwesome after bootstrap 3?
+
+File structure?
+bootstrap/
+├── css/
+│   ├── bootstrap.css
+│   ├── bootstrap.min.css
+│   ├── bootstrap-theme.css
+│   ├── bootstrap-theme.min.css
+├── js/
+│   ├── bootstrap.js
+│   ├── bootstrap.min.js
+└── fonts/
+    ├── glyphicons-halflings-regular.eot
+    ├── glyphicons-halflings-regular.svg
+    ├── glyphicons-halflings-regular.ttf
+    └── glyphicons-halflings-regular.woff
+
+IE tips: http://getbootstrap.com/getting-started/#browsers
+- use html5shiv
+- use response.js
+- <meta http-equiv="X-UA-Compatible" content="IE=edge">
+- media query issue for IE10
+
+CSS - overview
+	- HTML5
+	- Mobile first
+		* enable touch zooming
+	- image scaling
+		* img.img-responsive
+		* max-width: 100% and height:auto
+	- default setting for display/typography, link style
+		* Remove margin on the body
+		* Set background-color: white; on the body
+		* Use the @font-family-base, @font-size-base, and @line-height-base attributes as our typographic base
+		* Set the global link color via @link-color and apply link underlines only on :hover
+	- normalize is used (http://necolas.github.io/normalize.css/)
+	- use div.container to center page content
+
+CSS - Grid System
+	- 

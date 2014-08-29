@@ -1,0 +1,210 @@
+Test Driven JavaScript Note
+
+Ch01 Epi01
+
+	Professional Javascript Development Practice
+	- support all browser
+	- team developed' and maintained'
+	- easy to maintain
+
+	Channels
+	- Live channel (creating the app)
+	- Lessions learned
+
+	GitHub, encourage to fork and participation
+
+	App: weewikipaint
+
+	Git setup
+	* git init
+	* create README
+	* git add
+	* git commit
+
+	WebStorm
+	* create 
+	* create .gitingore file to ignore workspace.xml file
+
+	Agile Practice
+	* MMF (Minimum Marketable Feature)
+	* User Stories
+	* Engineering Tasks
+
+	Jake
+	* Javascript Make
+	* tasks
+	* dependency ...
+
+Ch01 E02
+
+	Build script/automation
+
+	Static Code Analysis
+	* Lint
+	* Especially important to JavaScript dev
+
+	Jake -> Default task
+
+	Automate Linting
+	* LintRunner
+		- use JSHint underneath, can switch to others
+	* Lesson Learned episode linked
+	
+	Use Jake to run lint as defalt task
+	* reqire the lint_runner.js
+	* run the validateFile()
+	* npm install jshint
+		- npm puts all files under node_module, which is very easy to share
+	* include all js files
+	* exclude node modules
+	* setup options for JSHint
+
+Ch01 E03
+
+	Configure JSHint options
+	* make it strict first, loose it later
+
+	JS Hoisting causing JSHint to fail
+	* end up need to make the whole thing in a immediate function
+
+	Continuous Integration
+	* Make sure we have a known good build
+	* set up the integration branch
+
+Ch01 E04
+	
+	Continuous Integration Setup
+	* having everybody's work integrated
+	* make sure the build is always working well
+		- if something doesn't work -> it's your fault, cause you alway integrate with known good build
+
+	Setting up Build Server
+	* use a Windows Machine on Mac VMWare
+	* Share folder as a way to share repository
+	* git clone from Mac's repository
+	* to build on windows 
+		- install git
+		- clone repository
+		- install node
+		- create bat file
+
+	For creating an integration branch
+	* just git checkout integration
+
+Ch01 E05
+
+	Cheat integration
+	* create a jake task call Integrate, and integrate will depend on default task
+	* use manual instructions
+		- Make sure git status is clean
+		- Build on the integration box
+			* walk over to integration box
+			* git pull
+			* jake
+			* if jake fails, stop! try again
+		- git check out integration
+		- git merge master --no-ff --log
+		- git checkout master
+
+	Always make sure you have a good build
+
+	Make build fail when lint failed
+
+	desc("Lint everything");
+	task("lint", ["nodeVersion"], function() {
+		var lint = require("./build/lint/lint_runner.js");
+
+		var javascriptFiles = new jake.FileList();
+		javascriptFiles.include("**/*.js");
+		javascriptFiles.exclude("node_modules");
+		var options = nodeLintOptions();
+		var passed = lint.validateFileList(javascriptFiles.toArray(), options, {});
+		if (!passed) fail("Lint failed");
+	});
+
+	use gitk to make sure we are doing continuous integration correctly
+
+	the goal is to make sure Integration branch will never fail
+
+Ch02 E06
+
+	Done with integration:
+	If your build is slow, you have another problem, you should work on making it faster
+
+	server side testing
+	* create a server directory
+	* create server.js file
+
+	choose a framework of javascript TDD
+	* down to two library
+		- NodeUnit
+		- Mocha
+	* James has issue with BDD
+		- BDD is too verbose
+		- BDD started as a way to teach TDD
+		- BDD is too documentation-centric
+
+	start with NodeUnit
+
+Ch02 E07
+
+	NodeUnit setup
+	* create a new task in jakefile for testing
+	* npm install nodeunit
+
+	First running test
+
+	Change the reporter
+
+	make server.js export a function that returns a number
+	make the unit test tests whether the number is correctly returned
+
+Ch02 E08
+	
+	Should we abstract out the test framework?
+	* it's hard to abstract framework (testframe work tend to like to own the world)
+	* it's easy to abstract out library
+
+	use continuous integration script and check it in is better for team to collaborate
+	* IDE setup is not easy
+
+	to avoid problem of runnign nodeunit asynchronously
+	* we want to make sure test is successful before integrate
+
+	desc("Test everything");
+	task("test", [], function() {
+		var reporter = require("nodeunit").reporters["default"];
+		reporter.run(['src/server/_server_test.js'], null, function(failures) {
+			if (failures) fail("Tests failed");
+			complete();
+		});
+	}, {async: true});
+
+	* async to wait until complete() is called
+	* failure contains if test has any failure ...
+
+	0 assertion problem?
+	* test.equal instead of assert
+
+Ch02 E09
+
+	create a very simple HTTP server
+	* decided to use node.js default HTTP stuff
+
+	when doing TDD, you actually know what you might want
+	in doing spike, you just learn and try things
+
+	doing a spike
+
+Ch02 E10
+
+	spikes are kept in a folder for future reference
+
+	you can choose to lint spikes or not
+
+	test:
+	* use http get to make sure something is running at localhost:8080
+
+
+
+

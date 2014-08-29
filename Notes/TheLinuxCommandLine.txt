@@ -1,0 +1,436 @@
+Ch1 What is the Shell
+
+	$: command prompt - where waiting the user's command
+	\: root directory
+	~: user's home directory
+
+	command history: down/up arrow keys
+	
+	in windows: use cygwin
+
+	date command: output current date
+	cal command: output calendar
+		- in cygwin: need to install package util-linux
+		- cal -3 : output 3 months
+		- cal 2013 : output whole 2013
+	df command:
+		- display filesystem
+	free command:
+		- display memory usage
+	exit command:
+		- leave shell environment
+
+	virtual console/terminals
+		- Ctrl F1 to F6
+		- Ctrl F7 belong to GUI
+
+Ch2 Navigation
+	
+	in Linux: everything is a file
+	
+	pwd: present working directory
+	ls: list
+		- absolut path
+		- relative path
+	cd: change directory
+		- to change to another user cd ~harrychou
+
+Ch3 Explore
+
+	linux command format
+		command -options arguments
+
+	ls
+		- -al options
+		- understand the long format
+	file - determin file type
+	less 
+		- display file content
+		- command for less content page
+			* f: forward one page
+			* b: back one page
+			* g: beginning of file
+			* G: end of file
+			* /pattern: search
+			* n: next match
+			* q; quit
+		- less is more
+
+	tour of common locations /, /bin, /boot, 
+		- /bin: binary for boot time
+		- /boot: linux kernel
+		- /sbin
+		- /usr/bin ...
+
+	symbolic link 
+
+Ch4 Manipulate files and directories
+
+	cp : copy
+	mv ; move/rename
+	mkdir : make directory	
+	rm : remove
+	ln : create link (hard/symbolic)
+
+	to copy directory, but only replace with newer or non-exit
+		- cp -u directory1/* directory2
+
+	wildcard:
+		*
+		?
+		[abc] : a or b or c
+		[0-9]
+		[[:upper:]]* : any file begins with uppercase letter
+		[![:digit:]]* : any file that does not begin with digit
+		[[:lower:]123] : any file start with lowercase or 1 or 2 or 3
+
+  mkdir
+		- can create multiple directories at once
+
+	copy
+		- can copy file or directories
+		-i require confirmation
+		-u only update (newer or non-exist in target)
+
+	mv
+		- can be used for rename
+		- can move mulitple files at once (mv file1 file2 dir2)
+		-u only move when the file is newer (if exists at all)
+	
+	rm
+		- can remove multiple items
+		-r to remove non-empty directory
+
+	ln
+		-s create symbolic link
+
+Ch5 Working with Commands
+
+	type : get the type of command
+	which : where is the executable of the command
+	man : manual page
+	apropos : display a list of apropriate commands
+	info : display info
+	whatis : very brief description
+	alias : create alias of a command
+
+	types of commands:
+	- executable: compiled or script
+	- builtin: command built into shell itself
+	- shell function
+	- alias
+
+	type:
+		- show the type of command
+
+	which
+		- show where the command is from
+		- only works for executable
+
+	ways to get help on command
+		- help (help ls)
+		- --help (ls --help)
+		- man (man ls)
+		- apropos (apropos search_str)
+			* same as man -k 
+		- whatis 
+			* display very short description
+		- info
+			* display the info page
+
+	other help info
+		- /usr/share/doc
+		- to read .gz file, use zless
+
+	run multiple commands in one line
+		- command1; command2; command3;
+
+	make them into alias
+		- alias foo='cd /usr; ls; cd -'
+		- before making alias, use type to check if the name has already been used
+		- unalias : to remove alias
+	
+	cd -
+		* go back to previous directory
+
+Ch6 Redirection
+
+	cat - concantenate file
+	sort - sort lines of text
+	uniq - report or omit repeated lines
+	wc - word count
+	grep - print matched lines
+	head - output the first part of a file
+	tail - output the last part of a file
+	tee - read from std input and output to stdout and files
+
+	standard input/output/error
+		- everything in Linus is a file
+		- stadnard input/output/error are all files
+		- standard input connects to keyboard
+		- standard output/error connect to screen
+
+	redirect stdout
+		- redirect standard output to file
+		- even command error has empty standard output
+			> empty.txt to create an empty file
+		- to append to file, use >> 
+
+	redirect stderr
+		- use file descriptor 
+			* stdin 0
+			* stdout 1
+			* stderr 2
+		- to redirect standard error
+			ls -l /path 2> err.log
+		- to redirect both output and standard error
+			ls -l /path > output.txt 2>&1
+		- another way ...
+			ls -l /path &> out.txt
+	  - to throw out the output 
+			redirect to /dev/null	
+	
+	cat
+		- concatenate files
+		- reads one or more files and output to stdout
+		- example
+			cat file* > file3
+			(reads all files start with 'file' and output to file3)
+		- if no arguments, cat reads from stdin (keyboard)
+			(use Ctrl-D for EOF)
+		- car < file3 > file4
+			reads from file3 ... and output to file4 
+
+	pipeline
+		- any command that reads from stdin and output to stdout is using pipeline
+		- pipeline is a shell feature
+
+	filters
+		- special kind of command that use pipeline 
+		- examples
+			ls /folder1 /folder2 | sort | less
+			(sort is the filter here - display all files in folder1 and folder2, sort the output, and use less to display)
+		- sort
+		- uniq
+		- wc: print line/word/byte counts
+		- grep: print matching lines
+				* -i (case insensitive)
+				* -v (print NOT matching lines)
+		- ls /bin /usr/bin | sort | uniq | wc -l
+			* get all files in two folders
+			* sort them
+			* take out duplicates
+			* get the number of lines
+		- ls /bin /user/bin | sort | uniq | grep zip
+			* same as above
+			* grep zip will list out only lines with 'zip'
+		- head/tail: print the first or last couple lines
+			head -n 5 filename.txt
+			ls /usr/bin | tail -n 5
+			tail -f /var/log/messages
+				* this will monitor the dynamic messages file, -f will force to update
+		- tee output to file while continue to stdout
+			ls /usr/bin | tee out.txt | grep zip
+			(will output all ls result to out.txt, while only to screen those with zip)
+
+	linux has tools that you can actually build the things you want instead of things given to you by windows
+
+Ch7 Seeing the world as the shell sees it
+
+	echo: display a line of text
+	
+	exapnsion: shell expand special string into list of strings
+		- echo *
+			(print out all files in the directory, * was expanded, then echo was executedo) 
+		- pathname expansion
+			echo D*
+			echo *s
+			echo [[:upper:]]* (all files whose names start with uppercase
+			echo /usr/*/share
+			- to show hidden files
+				ls -d .[!.]?*
+		- tild expansion
+			~ will be expanded to current user's home directory
+			~username will be expanded to the specific user's home dir
+		- arithmetic expansion
+			echo $((2+3))
+			echo $((3**2)) // output 9
+		- brace expansion
+			echo file{A,B,C}
+			echo file{1..12}
+			echo test{Z..A}
+			echo a{A{1,2},B{3,4}}b  // aA1b aA2b aB3b aB4b
+			mkdir {2009..2011}-0{1..9} {2009..2011}-{10..12}  // will create folder for all 2009-2011 months
+		- parameter expansion
+			echo $USER
+			- to get all environment variables
+				printenv
+		- command substitution
+			echo $(ls)
+			ls -l `which cp`
+
+	quoting: to avoid unwanted expension
+		- unwanted expansion
+			echo this is    a test (multiple spaces are taken out)
+			echo total is $100 ($1 will be expanded to variable, which is undefined)
+		- double quote
+			avoid exception: $, \ , `
+		- single quote
+			avoid all expansions
+		- escaping character
+			echo "total for $USER is \$500"
+
+Ch8 Keyboard tricks
+
+	clear - clear terminal
+	history - show last 500 commands
+
+	Command Line Editing:
+	- Readline - the library to handle editing
+	- Keys for move:
+		Ctrl-A: move to beginning
+		Ctrl-E: move to end
+		Ctrl-F/B : move one char foward/back
+		Alt-F/B : move one word
+	- keys for kill/yank
+		Ctrl-K: kill to the end
+		Ctrl-U: kill to the begin
+		Alt-D: kill to the word
+		Alt-Backspace: kill to the begin of word
+		Ctrl-Y: yank
+	
+	completion:
+	- tab is enough
+	- completion can complete
+		- filename/pathname
+		- variables $US
+		- username $userna
+		- command (if first word of line)
+		- hostname @hostname (if hostname in /etc/hosts)
+
+	history
+	- kept in .bash_history file in home directory
+	- 500 commands
+	- use grep to find the ones you need
+		history | grep ls
+	- run a specific item
+		!88 or whatever number
+	- to serach history
+		Ctrl-R
+		Ctrl-J to copy
+		keep Ctrl-R to keep searching
+		there are others to try
+	- !88 is the history expansion
+		!! to repeat the last command
+
+	use script to record the bash session
+	- include commands and the output
+	- ctrl chars are included, which is very annoying
+	- can use cat to not show the ctrl chars
+
+Ch9 Permissions
+
+	Multiuser system: require permission settings
+	
+	id - display user identitfy
+	chmod - change file's mode
+	umask - set the default file permission
+	su - run a shell with super user permission
+	sudo - run a command with super user permission
+	chown - change owner
+	chgrp - change file's group ownership
+	passwd - change user's password
+
+	concepts:
+	- user can own file
+	- user can belong to a group
+	- group can own file
+	- access can also be granted to everybody (the world)
+
+	id
+	- get the id of current user
+	- uid: user id
+	- gid: primary group id
+	- most user's settings are defined in /etc/passwd
+	- most group things are defined in /etc/group
+	- passwords are defined in /etc/shadow
+	- modern Linux assign users to his/her own group to make permission mgment easier
+
+	file mode
+	- the first column of ls -l (long format)
+	- filetype
+		* - regular, d directory, l symbolic link, c character special file (terminal/modem), b block special file (CD-ROM)	
+	- rwx
+		* for file: read/write/execute
+		* for directory: list/create/entered
+		* to execute script, you need read permission too
+	- default file filemode
+		-rw-r--r--
+	- default folder filemode
+		drwxr-xr-x 
+
+	chmode
+	- change mode (permission)
+	- only file's owner or super user can do that
+	- two ways to specify mode change
+		* octal number
+		* symbolic representation
+	- octal 
+		* 0 ---, ..., 4 r--, 5 r-x, 6 rw-, 7 rwx
+	- symbolic	
+		* u user/owner, g group, o outside/world, a all
+		* u+x -> add x to owner
+		* u-x -> take out x from owner
+		* +x (a+x) -> give x to all (owner/group/world) 
+		* o-rw -> take r and w out from world
+		* go=rw -> set group and world to rw
+		* u+x, go=rw => add execution to owner, make sure group and world have r and w
+	- when doing -recursive with chmod, all files and subdirectories will have the same permission, which normally should not be the case
+	- there are some special permissions
+		page 86... I doubt I need to know it
+
+	change identity
+	- su: change session to super user	
+		su -l user
+		* -l: create a login shell
+			setting new environment and everything
+		* su -
+			use superuser, setting new login shell
+		* exit will go back to previous shell
+	- sudo: change identity only for the command
+		* allow ordinary user to temporary has the permission to do superuser work
+		* sudo does not require to know superuser's password
+			admin need to configure your account to run that specific command
+		* does not create new shell, nor does it access
+		* sudo -l 
+			to list all commands to run, on Mac, it is (ALL)
+		* sudo by default, trust you for several minites for subsequent sudo commands
+
+	Windows vs. Linux security
+	- Windows if running as administrator, you are becoming administrator
+	- Linux, you need to sudo to run certain admin tasks, but you still are the oridnary user
+	- Linux is more restricted in a sense
+	- in the past, Linus use su, and force people to have root account
+	- modern Linux like Mac and Ubuntu disable root by default, and use sudo to grant permission
+
+	chown
+	- change ownership of file
+	- to share a file to a spcific person
+		* first copy the file to that person's home directory
+		* then set the ownership of the file to that person
+			sudo chown tony: ~tony/thefile.txt
+
+	How to share a directory between users
+	- sudo mkdir /usr/local/share/Music
+		(create a directory on shared directory)
+		the directory's ownership will be root (we use sudo to create it)
+	- 
+
+
+
+
+		 
+	
+
+
+

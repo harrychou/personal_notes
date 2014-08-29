@@ -1,0 +1,80 @@
+Why study async/parallel programming?
+
+What is async programming?
+  - opposite of sync: request/response in real time
+    (think phone conversation back and forth)
+  - non-blocking
+  - may response in the future
+  - think email
+What is concurrent programming?
+  - aka concurrent computing
+  - a design in which programs are designed as collections of 
+    interacting computational processes that may be executed in parallel
+  - focus on the aspect that multiple sub-tasks may be executed simutaneously
+  - many ways to achieve
+    * messaging
+    * multi-threading
+    * multi-processing  
+What is multi-thread programming?
+  - use thread 
+  - why? normally two purpose:
+    * UI responsiveness - keep UI thread non-blocking 
+    * set aside long waiting tasks, so it won't block main task
+What is parallel programming?
+  - focus on multi-core
+What is distributed programming?
+  - focus on distributed to multiple machine
+What is grid programming?
+  - focus on network
+What is cloud programming?
+  - Internet based
+
+CLR Threading Note:
+
+  CLR support for concurrent execution - in the form of multi-threading
+
+  Contents:
+  - Vocabulary: thread/process
+  - use cases
+  - caveats
+  - mechanics
+  ...
+
+  Process: inert container (?)
+  - defines virtual address space
+  - separte contents from other process
+
+  Thread: execute code
+  - a path of execution through any/all code in a process
+  - have access to all/any data within that process (for Win32 process)
+    * for managed code, only AppDomain is accessible
+  - Each thread has it's own callstack and CPU registers
+  - if no threads, a process will exit
+
+  Why multi-threads?
+  - opportunity to scale by parallizing CPU bound oper
+	- wait on I/O work
+	- responsive UI (UI thread should have high priority)
+
+	Demo: UI responsiveness
+	- while doing Thread.Sleep(5000), the UI thread is not responsive
+	- cannot repaint itself
+
+	cost of multi-threading
+	- slower execution time on single core machine 
+		* context switching
+	- add complexity
+		* line of code
+		* readability
+		* debug
+		* test
+
+	starting a thread
+	- System.Threading.Thread
+		* construct by t= new Thread(Fuction)
+		* set t.Name, t.Priority
+		* t.Start()
+
+	
+
+	

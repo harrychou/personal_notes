@@ -1,0 +1,135 @@
+Ch1 Before Begin
+  to get the verison number of Powershell (if variable does not exist, assume v1)
+    $psversiontable.psversion 
+
+Ch2 Command
+  
+  some bash commands are available
+    * but not all options are accepted (ex. Dir /s)
+    * these commands are still implemented by PowerShell commandlet
+
+  file system commands
+    Dir/ls
+    Copy/cp
+    Cd
+    Ren (rename file)
+    Mkdir 
+    RmDir
+    Del/rm
+    Type/cat (display content of a file)
+
+  take away: some commands still work, but may behave differently than cmd.exe or bash
+
+  PSDrives
+    * have a unified way to view hierachical data store
+      - file system
+      - registry (hkcu: hklm:)
+    * to show all PSDrives mapped
+      Get-PSDrive
+      (can be long drive name)
+    * to map your own PSDrive
+      New-PSDrive -name DEMO -psprovider FileSystem -root \\Server\Share\Folder
+      (unfortunately, this is not available to Windows Explorer)
+
+  How to execute external commands with a lot of parameters:
+    
+    $exe = "C:\Vmware\vcbMounter.exe"
+    $host = "server"
+    $user = "joe"
+    $password = "password"
+    $machine = "somepc"
+    $location = "somelocation"
+    $backupType = "incremental"
+
+    & $exe -h $host -u $user -p $password -s "name:$machine" -r $location -t $backupType
+
+    (& is the way to turn string to command and call on it)
+
+  Powershell command map to external command
+
+    Get-ChildItem (for Dir, Ls)
+    Set-Location (for Cd)
+    Move-Item (for Move)
+    Rename-Item (for Ren)
+    Remove-Item (for Del, Rm, RmDir)
+    Copy-Item (for Copy, Cp)
+    Get-Content (for Type, Cat)
+    New-Item (for MkDir)
+
+  Powershell has consistent naming for commands
+    
+    Display a list of services Get-Service
+    Display a list of running processes Get-Process
+    Display the contents of an event log Get-EventLog
+    Create a new service New-Service
+    Retrieve Exchange mailboxes Get-Mailbox
+    Create a new Exchange mailbox New-Mailbox
+
+Ch3 Help System
+
+  Get-Help event 
+    - get commands about event
+    - you can use man or help 
+      * function wrapper for Get-Help with filter of More
+      * less typing, so very useful
+    - Get-Help *Log*
+      will display all commands with Log
+      if only one match, will just display help for that command
+    - Help *EventLog* will do the same thing as Get-Help
+
+  Ctrl-C: break
+
+  Get-Command
+    - Gcm
+    - only list for comdlets
+    - Help is searching in help document
+
+  Understanding Help
+    - Parameters
+      * Optional
+      * Mandatory
+        (Powershell will prompt you if you don't supply them)
+    - A comdlet can have more than one set of parameters
+    - most comdlet also accept a set of CommonParameters
+      -Verbose
+      -Debug
+      -WarningAction
+      -WarningVariable
+      -ErrorAction
+      -ErrorVariable
+      -OutVariable
+      -OutBuffer
+    - Positional parameters
+    - Best practice: spell out parameter names until you are familiar with the comdlet
+    - Help .... -full 
+      (to get full document instead of summary)
+    - some parameters are switch type, you cannot provide value for it
+      (either present or not)
+    - type of parameter
+      * String
+      * Int/Int32/Int64
+      * DateTime
+        05-13-2013
+      * string[]
+        - provided by comma-separated strings
+        - or read from other comdlet's output
+          Get-EventLog Application -Computer (Get-Content list.txt)
+          (very useful)
+        - or for mandatory parameter just leave empty, the Powershell will prompt for it
+
+  Access about topics
+    - Help *common*
+
+  Online help
+    - Help Get-EventLog -online
+
+  How to retrieve value from registry?
+    - to find all mapped registry hive
+      Get-PSDrive
+    - cd HKLM: 
+    - cd to the directory
+    - to list all entries in the directory
+      Get-ItemProperty -Path .
+
+
+Ch 4 Pipeline : connecting commands
