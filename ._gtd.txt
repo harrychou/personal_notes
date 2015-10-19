@@ -23,6 +23,7 @@ Monday
   * Each item that is actively being worked and will need to be deployed we will need an AWR, and the AWR number should be updated in the list
   * If you are not sure what you should be working on check with the IT lead and business lead
 
+This is OK. I think.
 
 
 Quarterly
